@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Peta Sensor GPS & IMU</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+    #map { height: 100vh; }
+  </style>
+</head>
+<body>
+<div id="map"></div>
+
+<!-- Leaflet JS -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<!-- Firebase SDK -->
+<script type="module">
+  // Import Firebase modules
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-app.js";
+  import { getDatabase, ref, onChildAdded } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-database.js";
+
+  // Firebase config (sudah Anda berikan)
+  const firebaseConfig = {
+    apiKey: "AIzaSyDHXS7sV18kY8-UC4Q3vTEx7L2vzK_KvIA",
+    authDomain: "dekdagps.firebaseapp.com",
+    databaseURL: "https://dekdagps-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "dekdagps",
+    storageBucket: "dekdagps.firebasestorage.app",
+    messagingSenderId: "216946720427",
+    appId: "1:216946720427:web:956d54322300fdedd781ee"
+  };
+
+  // Initialize Firebase
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
+
+  // Inisialisasi peta Leaflet
+  const map = L.map('map').setView([-7.797068, 110.370529], 14); // Yogyakarta (default)
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; OpenStreetMap contributors'
+  }).addTo(map);
+
+  // Referensi data di Firebase
+  const dataRef = ref(db, 'sensorData');
+
+  // Dengarkan data baru
+  onChildAdded(dataRef, (snapshot) => {
+    const data = snapshot.val();
+    const lat = parseFloat(data.lat);
+    const lng = parseFloat(data.lng);
+    if (!lat || !lng) return;
+
+    // Isi popup marker
+    const popup = `
+      <b>Waktu:</b> ${data.time}<br>
+      <b>Lokasi:</b> ${lat.toFixed(6)}, ${lng.toFixed(6)}<br>
+      <b>Kecepatan:</b> ${data.speed} km/h<br>
+      <b>Suhu:</b> ${data.suhu} °C<br>
+      <b>Kelembaban:</b> ${data.kelembaban} %<br>
+      <b>Accelerometer:</b><br>
+      X: ${data.accX} | Y: ${data.accY} | Z: ${data.accZ}<br>
+      <b>Gyroscope:</b><br>
+      X: ${data.gyroX} | Y: ${data.gyroY} | Z: ${data.gyroZ}<br>
+      <a href="https://www.google.com/maps?q=${lat},${lng}" target="_blank">📍 Lihat di Google Maps</a>
+    `;
+
+    // Tambah marker ke peta
+    const marker = L.marker([lat, lng]).addTo(map);
+    marker.bindPopup(popup);
+    map.setView([lat, lng], 16);
+  });
+</script>
+</body>
+</html>
